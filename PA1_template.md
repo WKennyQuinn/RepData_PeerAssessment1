@@ -25,7 +25,8 @@ The analysis takes part in 5 steps:
 
 First, if the data does not already exist in the working directory, it is downloaded and unzipped.
 
-```{r download}
+
+```r
 fileUrl<- "http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
 
 #Check if file exists. If not, download
@@ -45,37 +46,61 @@ Repdata <- read.csv("./repdata-data-activity/activity.csv",header=TRUE, na.strin
 str(Repdata)
 ```
 
+```
+## 'data.frame':	17568 obs. of  3 variables:
+##  $ steps   : int  NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : chr  "2012-10-01" "2012-10-01" "2012-10-01" "2012-10-01" ...
+##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
+```
+
 Data is stored in a dataframe `Repdata`.
 
 ##Determine total steps per day
 
 The `plyr` package is used to determine the total number of steps taken per day.
 
-```{r stepsperday, message=FALSE}
+
+```r
     require(plyr)
     StepsPerDay <- ddply(Repdata,.(date),summarize,TotalSteps = sum(steps,na.rm=TRUE))
 ```
 
 A histogram of the above data is plotted, using `ggplot2`.
 
-```{r plottotalperdata, message=FALSE}
+
+```r
     require(ggplot2)
     plotsteps <- ggplot(StepsPerDay, aes(x=TotalSteps))
     plotsteps + geom_histogram(binwidth = 1000, colour = "black", fill="mediumturquoise") + labs(title="Avg. Steps per Day")
 ```
 
+![plot of chunk plottotalperdata](figure/plottotalperdata-1.png) 
+
 The mean and median total number of steps taken per day is calculated. 
 
-```{r statsperday}
+
+```r
     mean(StepsPerDay$TotalSteps)
+```
+
+```
+## [1] 9354
+```
+
+```r
     median(StepsPerDay$TotalSteps)
+```
+
+```
+## [1] 10395
 ```
 
 ##Determine daily activity pattern
 
 Again using `plyr`, the mean steps taken during each 5 minute activity interval is determined by averaged across every day in the two month duration of the data set. This is plotted in a line plot.
 
-```{r stepsperinterval}
+
+```r
     #Calculate average steps for each interval
     StepsPerInterval <- ddply(Repdata,.(interval),summarize,AverageSteps=mean(steps,na.rm=TRUE))
 
@@ -84,23 +109,36 @@ Again using `plyr`, the mean steps taken during each 5 minute activity interval 
          main="Average Steps Per Interval", xlab="Interval",ylab="Average Steps")    
 ```
 
+![plot of chunk stepsperinterval](figure/stepsperinterval-1.png) 
+
 The interval which contains the highest average number of steps is determined.
 
-```{r highestinterval}
+
+```r
     StepsPerInterval$interval[which(StepsPerInterval$AverageSteps == max(StepsPerInterval$AverageSteps))]
+```
+
+```
+## [1] 835
 ```
 
 ##Imputing missing values
 
 Calculate the total number of rows with missing (`NA`) values. 
 
-```{r missingvalues}
+
+```r
     sum(is.na(Repdata$steps))
+```
+
+```
+## [1] 2304
 ```
 
 The missing data is filled in. If a value is `NA`, it will be replaced with the mean steps for that value's interval, averaged over the entire two month's worth of data. The imputed data is stored in variable `Repdata.Impute`. This strategy is based on a method discussed on Stackoverflow [here](http://stackoverflow.com/questions/9322773/how-to-replace-na-with-mean-by-subset-in-r-impute-with-plyr).
 
-```{r imputevalues}
+
+```r
     #Create function that checks for NA values in the input, and replaces with the average of the input, ignoring NA's.
     impute.mean <- function(x) replace(x,is.na(x), mean(x,na.rm=TRUE))
 
@@ -114,7 +152,8 @@ The missing data is filled in. If a value is `NA`, it will be replaced with the 
 
 Plot the new data, and recalculate the mean and median steps taken per data.
 
-```{r filledstatistics}
+
+```r
     #Calculate steps per interval on imputed data
     StepsPerDay.Impute <- ddply(Repdata.Impute,.(date),summarize,TotalSteps = sum(steps))
 
@@ -122,28 +161,34 @@ Plot the new data, and recalculate the mean and median steps taken per data.
     plotsteps.Impute <- ggplot(StepsPerDay.Impute, aes(x=TotalSteps))
     plotsteps.Impute + geom_histogram(binwidth = 1000, fill="rosybrown2",colour="black") + 
         labs(title="Avg. Steps per Day - Imputed")
-    
+```
 
+![plot of chunk filledstatistics](figure/filledstatistics-1.png) 
+
+```r
     #Calculate statistics
     mean(StepsPerDay.Impute$TotalSteps)
+```
+
+```
+## [1] 10766
+```
+
+```r
     median(StepsPerDay.Impute$TotalSteps)
 ```
 
-```{r textvariables, echo=FALSE}
-    #Create variables with statistics that can be used in markdown text
-    meansteps <- round(mean(StepsPerDay$TotalSteps),0)
-    mediansteps <- round(median(StepsPerDay$TotalSteps),0)
-    meansteps.impute <- round(mean(StepsPerDay.Impute$TotalSteps),0)
-    mediansteps.impute <- round(median(StepsPerDay.Impute$TotalSteps),0)
-    
-    #Change options that determine when numbers are shown in scientific notation
-    options(scipen=2,digits=2)
+```
+## [1] 10766
 ```
 
-After imputing average interval values, the mean steps per day is `r meansteps.impute`, compared to `r meansteps` before imputing, an increase of `r round((meansteps.impute-meansteps)/meansteps*100,0)` percent. The median steps per day is `r mediansteps.impute` after imputing, compared to `r mediansteps` after, an increase of `r round((mediansteps.impute-mediansteps)/mediansteps*100,0)` percent. The imputation strategy lead to an increase in both median and mean.
+
+
+After imputing average interval values, the mean steps per day is 10766, compared to 9354 before imputing, an increase of 15 percent. The median steps per day is 10766 after imputing, compared to 10395 after, an increase of 4 percent. The imputation strategy lead to an increase in both median and mean.
 
 An overlay of the histograms before and after imputating is calculated.
-```{r overlayplot}
+
+```r
     #Create a variable "NAStatus", that differentiates the raw data with the imputed data
     StepsPerDay$NAstatus <- 'WithNAs'
     StepsPerDay.Impute$NAstatus <- 'ImputedNAs'
@@ -157,13 +202,16 @@ An overlay of the histograms before and after imputating is calculated.
         labs(title="Avg. Steps per Day - Comparison")
 ```
 
+![plot of chunk overlayplot](figure/overlayplot-1.png) 
+
 The plot shows that many of the counts that had previously been in the 0-1,000 steps bin have moved to the 10,000-11,000 steps bin. This is a surprising result, as it would be expected that the impute procedure would lead to a distributed increase over multiple bins. Investigation shows that the distribution of `NA` in the original dataset is generally grouped into day-long blocks (so that data from all intervals in a single day is listed as `NA`). The imputation, even though it is implemented at the interval level, effectively operates at the day level because of this grouping. A number of days, which were completely `NA`, are replaced entirely by the average daily total steps, which is 10766. This helps explain the large peak in the ImputedNAs data set.
 
 ## Evaluate differences between weekdays and weekends
 
 Using the `lubridate` package, a new variable `Day` is created in the original dataset to differentiate between weekdays (`Day` value of 2-6) and weekends (`Day` value of 1 or 7).
 
-```{r weekdays,message=FALSE}
+
+```r
     require(lubridate)
 
     #Create new variable Day
@@ -176,8 +224,8 @@ Using the `lubridate` package, a new variable `Day` is created in the original d
 
 The activity levels between weekdays and weekends are compared on a panel plot.
 
-```{r plotweekdays}
-    
+
+```r
     #Determine average steps for each subset
     StepsPerInterval.Weekday <- ddply(Repdata.Weekday,.(interval),summarize,AverageSteps=mean(steps,na.rm=TRUE))
     StepsPerInterval.Weekend <- ddply(Repdata.Weekend,.(interval),summarize,AverageSteps=mean(steps,na.rm=TRUE))
@@ -189,5 +237,7 @@ The activity levels between weekdays and weekends are compared on a panel plot.
     plot(StepsPerInterval.Weekend$interval,StepsPerInterval.Weekend$AverageSteps, type="l", 
          main="Weekends", xlab="Interval",ylab="Average Steps")
 ```
+
+![plot of chunk plotweekdays](figure/plotweekdays-1.png) 
 
 Comparison of the plots shown suggests that the user sleeps in on the weekends, so is less active. The user is generally more active throughout the day on the weekends, suggesting that their job may be relatively sedantary in comparison. 
